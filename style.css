@@ -54,7 +54,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .side-nav{display:grid;gap:5px}
 .nav-link{height:44px;border:0;background:transparent;color:rgba(var(--ivory-rgb),.72);border-radius:10px;display:flex;align-items:center;gap:11px;padding:0 var(--sidebar-inset);text-align:left;font-size:var(--fs-base);font-weight:var(--fw-medium);letter-spacing:var(--ls-ui);transition:var(--transition-ui)}
 .nav-link:hover{background:rgba(var(--ivory-rgb),.08);color:var(--white)}
-.nav-link.active{font-weight:var(--fw-semibold);background:var(--maroon);color:var(--white);box-shadow:inset 3px 0 var(--gold)}
+.nav-link.active{background:var(--maroon);color:var(--white);box-shadow:inset 3px 0 var(--gold)}
 .nav-icon{--ic:20px;--sw:1.65;width:20px;height:20px;display:grid;place-items:center;flex-shrink:0;color:rgba(var(--ivory-rgb),.6)}
 .nav-link.active .nav-icon{color:var(--gold)}
 .sidebar-bottom{margin-top:auto}
