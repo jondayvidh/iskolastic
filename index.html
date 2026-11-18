@@ -35,7 +35,7 @@
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 19V5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h12"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
 </svg>
-  <div class="app-shell" id="app-shell">
+  <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <a class="brand" href="#" data-page="overview" aria-label="iskolastic home">
         <span class="brand-word">isko<span>lastic</span></span>
@@ -57,7 +57,7 @@
           <strong>Consistent practice.</strong>
           <p>Each attempt contributes to a deeper understanding of the material.</p>
         </div>
-        <button class="profile-button" id="profile-button" type="button">
+        <button class="profile-button" type="button">
           <span class="avatar">JD</span>
           <span class="profile-copy"><strong>My profile</strong><small>Personal workspace</small></span>
         </button>
@@ -87,7 +87,7 @@
               <span class="quick-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg></span><span><strong>Create examination</strong><small>Prepare an examination from your study material</small></span><b aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-arrow-up-right"/></svg></b>
             </button>
             <button class="quick-card" data-action="explore">
-              <span class="quick-icon explore-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span><strong>Explore examinations</strong><small>Practice with available examinations</small></span><b aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-arrow-up-right"/></svg></b>
+              <span class="quick-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><span><strong>Explore examinations</strong><small>Practice with available examinations</small></span><b aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-arrow-up-right"/></svg></b>
             </button>
           </div>
 
@@ -131,8 +131,8 @@
             </div>
             <div class="question-builder-list" id="question-builder-list"></div>
             <div class="builder-footer">
-              <span class="autosave-label" id="draft-status">Drafts are stored on this device when saved.</span>
-              <div class="button-row"><button class="button button-soft" type="button" id="save-draft">Save draft</button><button class="button button-primary" type="submit" id="publish-exam">Publish examination <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-arrow-up-right"/></svg></button></div>
+              <span class="autosave-label">Drafts are stored on this device when saved.</span>
+              <div class="button-row"><button class="button button-soft" type="button" id="save-draft">Save draft</button><button class="button button-primary" type="submit">Publish examination <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-arrow-up-right"/></svg></button></div>
             </div>
           </form>
         </section>
@@ -156,7 +156,7 @@
 
         <section class="page" id="page-analytics">
           <div class="page-heading"><div><div class="eyebrow">PERFORMANCE REVIEW</div><h1>Results and analytics</h1><p class="page-intro">Review performance beyond individual scores and monitor progress over time.</p></div></div>
-          <div class="stats-grid analytics-stats" id="analytics-stats"></div>
+          <div class="stats-grid" id="analytics-stats"></div>
           <div class="analytics-columns">
             <section class="panel"><div class="panel-heading"><div><h3>Score history</h3><p>Most recent completed attempts</p></div></div><div id="score-history"></div></section>
             <section class="panel"><div class="panel-heading"><div><h3>Performance by subject</h3><p>Average score across all attempts</p></div></div><div id="subject-performance"></div></section>
@@ -195,7 +195,7 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="modal-backdrop hidden" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-    <div class="confirm-dialog"><div class="modal-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-help"/></svg></div><h2 id="confirm-title">Leave this examination?</h2><p id="confirm-copy">Your current responses will not be submitted.</p><div class="button-row"><button class="button button-soft" id="confirm-cancel">Continue</button><button class="button button-primary" id="confirm-accept">Leave examination</button></div></div>
+    <div class="confirm-dialog"><div class="modal-symbol"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-help"/></svg></div><h2 id="confirm-title">Leave this examination?</h2><p>Your current responses will not be submitted.</p><div class="button-row"><button class="button button-soft" id="confirm-cancel">Continue</button><button class="button button-primary" id="confirm-accept">Leave examination</button></div></div>
   </div>
   <script src="script.js"></script>
 </body>
