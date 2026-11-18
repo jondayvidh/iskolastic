@@ -237,37 +237,68 @@ function openBuilder(exam=null){
   renderBuilderQuestions(); showPage("create");
 }
 let builderQuestions=[];
-function blankQuestion(){return {type:"mcq",text:"",options:["","","",""],correct:"A",explanation:""};}
+function blankQuestion(){return {type:"mcq",text:"",options:["","","",""],correct:"",explanation:""};}
+const TF_OPTIONS=["True","False"];
+function clearQuestionError(card){card.classList.remove("invalid");card.querySelectorAll(".builder-error").forEach(n=>n.remove());}
 function renderBuilderQuestions(){
   const list=document.getElementById("question-builder-list"); list.replaceChildren();
   document.getElementById("question-count").textContent=builderQuestions.length;
   builderQuestions.forEach((q,index)=>{
     const card=el("article","builder-question"); card.dataset.index=index;
+    const refs={}; card._refs=refs;
+    card.addEventListener("input",()=>clearQuestionError(card));
+    card.addEventListener("change",()=>clearQuestionError(card));
     const head=el("div","builder-question-top"); head.append(el("strong","",`QUESTION ${String(index+1).padStart(2,"0")}`));
     const actions=el("div","question-actions");
     actions.append(iconButton("arrow-up","icon-button","Move question up",()=>moveQuestion(index,-1)),iconButton("arrow-down","icon-button","Move question down",()=>moveQuestion(index,1)),iconButton("x","icon-button danger","Remove question",()=>removeQuestion(index)));
     head.append(actions); card.append(head);
-    const grid=el("div","builder-question-grid");
+    const grid=el("div","builder-question-grid"); refs.promptHost=grid;
     const prompt=el("label",""); prompt.append(el("span","builder-label","Question prompt"));
-    const textarea=el("textarea"); textarea.placeholder="Write a clear question..."; textarea.value=q.text; textarea.addEventListener("input",()=>q.text=textarea.value); prompt.append(textarea);
+    const textarea=el("textarea"); textarea.placeholder="Write a clear question..."; textarea.value=q.text; textarea.addEventListener("input",()=>q.text=textarea.value); prompt.append(textarea); refs.prompt=textarea;
     const type=el("label",""); type.append(el("span","builder-label","Question type"));
     const select=el("select"); [["mcq","Multiple choice"],["truefalse","True or false"],["short","Identification"]].forEach(([v,t])=>select.add(new Option(t,v)));
-    select.value=q.type; select.addEventListener("change",()=>{q.type=select.value;if(q.type==="truefalse"){q.options=["True","False"];q.correct="A";}else if(q.type==="short"){q.options=[];q.correct=q.correct||"";}else{q.options=["","","",""];q.correct="A";}renderBuilderQuestions();}); type.append(select); grid.append(prompt,type); card.append(grid);
+    select.value=q.type;
+    select.addEventListener("change",()=>{
+      const next=select.value;
+      // Keep the prompt and explanation; never carry a correct answer into a different question type.
+      if(q.type==="mcq") q._opts=q.options.slice();
+      q.type=next; q.correct="";
+      q.options=next==="truefalse"?TF_OPTIONS.slice():next==="short"?[]:(q._opts||["","","",""]);
+      renderBuilderQuestions();
+    });
+    type.append(select); grid.append(prompt,type); card.append(grid);
     if(q.type==="mcq"){
       const label=el("span","builder-label","Answer options");
-      const options=el("div","option-editor");
+      const options=el("div","option-editor"); refs.optionsHost=options; refs.options=[];
       q.options.forEach((value,oi)=>{
         const wrap=el("label","option-edit");wrap.append(el("span","",LETTERS[oi]));
-        const input=el("input");input.value=value;input.placeholder=`Option ${LETTERS[oi]}`;input.maxLength=180;input.addEventListener("input",()=>q.options[oi]=input.value);wrap.append(input);options.append(wrap);
+        const input=el("input");input.value=value;input.placeholder=`Option ${LETTERS[oi]}`;input.maxLength=180;input.addEventListener("input",()=>q.options[oi]=input.value);wrap.append(input);options.append(wrap);refs.options.push(input);
       });card.append(label,options);
       const correct=el("div","correct-select");correct.append(el("label","","CORRECT ANSWER"));
-      const answer=el("select");LETTERS.forEach(l=>answer.add(new Option(`Option ${l}`,l)));answer.value=q.correct;answer.addEventListener("change",()=>q.correct=answer.value);correct.append(answer);card.append(correct);
+      const answer=el("select");answer.setAttribute("aria-label","Correct answer");
+      const none=new Option("Select correct answer","");none.disabled=true;answer.add(none);
+      LETTERS.forEach(l=>answer.add(new Option(`Option ${l}`,l)));
+      answer.selectedIndex=LETTERS.indexOf(q.correct)+1;
+      answer.addEventListener("change",()=>q.correct=answer.value);correct.append(answer);card.append(correct);
+      refs.correct=answer; refs.correctHost=correct;
     } else if(q.type==="truefalse"){
-      const correct=el("div","correct-select");correct.append(el("label","","CORRECT ANSWER"));
-      const answer=el("select");answer.add(new Option("True","A"),new Option("False","B"));answer.value=q.correct;answer.addEventListener("change",()=>q.correct=answer.value);correct.append(answer);card.append(correct);
+      const label=el("span","builder-label","Correct answer");
+      const group=el("div","option-editor");group.setAttribute("role","radiogroup");group.setAttribute("aria-label","Correct answer");
+      const hint=el("p","correct-hint");
+      const buttons=TF_OPTIONS.map((text,oi)=>{
+        const b=makeButton("","answer-option",()=>{q.correct=LETTERS[oi];sync();});
+        b.setAttribute("role","radio");b.append(el("span","option-letter",LETTERS[oi]),el("span","",text));return b;
+      });
+      const sync=()=>{
+        buttons.forEach((b,oi)=>{const on=q.correct===LETTERS[oi];b.classList.toggle("selected",on);b.setAttribute("aria-checked",String(on));});
+        const i=LETTERS.indexOf(q.correct);hint.textContent=i===0||i===1?`Correct answer: ${TF_OPTIONS[i]}`:"No correct answer selected yet.";
+      };
+      group.append(...buttons);sync();card.append(label,group,hint);
+      refs.correct=buttons[0]; refs.correctHost=hint;
     } else {
-      const correct=el("label","");correct.append(el("span","builder-label","Accepted answer"));
+      const correct=el("label",""); refs.correctHost=correct; correct.append(el("span","builder-label","Accepted answer"));
       const input=el("input");input.value=q.correct||"";input.placeholder="Enter the expected answer";input.addEventListener("input",()=>q.correct=input.value);correct.append(input);card.append(correct);
+      refs.correct=input;
     }
     const explain=el("label","");explain.style.display="block";explain.style.marginTop="13px";explain.append(el("span","builder-label","Explanation (shown after submission)"));
     const exp=el("textarea");exp.value=q.explanation||"";exp.placeholder="Explain the concept or why this answer is correct...";exp.addEventListener("input",()=>q.explanation=exp.value);explain.append(exp);card.append(explain);
@@ -276,17 +307,37 @@ function renderBuilderQuestions(){
 }
 function moveQuestion(index,delta){const target=index+delta;if(target<0||target>=builderQuestions.length)return;[builderQuestions[index],builderQuestions[target]]=[builderQuestions[target],builderQuestions[index]];renderBuilderQuestions();}
 function removeQuestion(index){if(builderQuestions.length===1){toast("An exam needs at least one question.",true);return;}builderQuestions.splice(index,1);renderBuilderQuestions();}
+function flagQuestion(i,hostKey,focusEl,message){
+  const card=document.querySelectorAll("#question-builder-list .builder-question")[i];
+  if(card){
+    clearQuestionError(card); card.classList.add("invalid");
+    const err=el("p","builder-error",message); err.setAttribute("role","alert");
+    const host=card._refs&&card._refs[hostKey]; if(host) host.after(err); else card.append(err);
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    if(focusEl) focusEl.focus({preventScroll:true});
+  }
+  toast(message,true);
+}
 function validateBuilder(){
+  document.querySelectorAll("#question-builder-list .builder-question").forEach(clearQuestionError);
   const title=document.getElementById("exam-title").value.trim();
   if(!title){toast("Add an exam title first.",true);document.getElementById("exam-title").focus();return null;}
   if(!builderQuestions.length){toast("Add at least one question.",true);return null;}
+  const cards=document.querySelectorAll("#question-builder-list .builder-question");
   for(let i=0;i<builderQuestions.length;i++){
-    const q=builderQuestions[i];
-    if(!q.text.trim()){toast(`Add the prompt for question ${i+1}.`,true);return null;}
-    if(q.type==="mcq"&& (q.options.length!==4||q.options.some(o=>!o.trim()))){toast(`Complete all four options in question ${i+1}.`,true);return null;}
-    if(!String(q.correct||"").trim()){toast(`Set the correct answer for question ${i+1}.`,true);return null;}
+    const q=builderQuestions[i],refs=cards[i]?._refs||{};
+    if(!q.text.trim()){flagQuestion(i,"promptHost",refs.prompt,`Add the prompt for question ${i+1}.`);return null;}
+    if(q.type==="mcq"){
+      if(q.options.length!==4||q.options.some(o=>!o.trim())){flagQuestion(i,"optionsHost",(refs.options||[]).find((_,oi)=>!q.options[oi]?.trim()),`Complete all four options in question ${i+1}.`);return null;}
+      if(!LETTERS.includes(q.correct)){flagQuestion(i,"correctHost",refs.correct,`Select the correct answer for question ${i+1}.`);return null;}
+    } else if(q.type==="truefalse"){
+      if(q.correct!=="A"&&q.correct!=="B"){flagQuestion(i,"correctHost",refs.correct,`Select True or False as the correct answer for question ${i+1}.`);return null;}
+    } else if(!String(q.correct||"").trim()){
+      flagQuestion(i,"correctHost",refs.correct,`Enter the accepted answer for question ${i+1}.`);return null;
+    }
   }
-  return {title,subject:document.getElementById("exam-subject").value.trim()||"General",difficulty:document.getElementById("exam-difficulty").value,description:document.getElementById("exam-description").value.trim(),questions:clone(builderQuestions)};
+  const questions=clone(builderQuestions).map(({_opts,...q})=>q.type==="truefalse"?{...q,options:TF_OPTIONS.slice()}:q);
+  return {title,subject:document.getElementById("exam-subject").value.trim()||"General",difficulty:document.getElementById("exam-difficulty").value,description:document.getElementById("exam-description").value.trim(),questions};
 }
 function saveBuilder(status){
   const data=validateBuilder();if(!data)return;
