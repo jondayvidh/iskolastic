@@ -1,4 +1,3 @@
-/* iskolastic — local-first assessment prototype */
 "use strict";
 
 const STORAGE_KEY = "iskolastic.workspace.v1";
@@ -46,7 +45,7 @@ function loadState(){
       return saved;
     }
   } catch(error){ console.warn("Could not read local workspace:", error); }
-  return {exams:[clone(SAMPLE)],attempts:[],savedIds:[],draft:null};
+  return {exams:[clone(SAMPLE)],attempts:[],savedIds:[]};
 }
 function persist(){
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -58,17 +57,17 @@ function el(tag, className, text){
   if(text !== undefined && text !== null) node.textContent = String(text);
   return node;
 }
-function makeButton(label, className, handler, type="button"){
-  const b = el("button", className, label); b.type=type; if(handler) b.addEventListener("click",handler); return b;
+function makeButton(label, className, handler){
+  const b = el("button", className, label); b.type="button"; if(handler) b.addEventListener("click",handler); return b;
 }
 const SVG_NS="http://www.w3.org/2000/svg";
-function icon(name,extra){
+function icon(name){
   const svg=document.createElementNS(SVG_NS,"svg"),use=document.createElementNS(SVG_NS,"use");
-  svg.setAttribute("class",extra?`icon ${extra}`:"icon");svg.setAttribute("viewBox","0 0 24 24");
+  svg.setAttribute("class","icon");svg.setAttribute("viewBox","0 0 24 24");
   svg.setAttribute("aria-hidden","true");svg.setAttribute("focusable","false");
   use.setAttribute("href",`#i-${name}`);svg.append(use);return svg;
 }
-function withIcon(button,name,where="end"){button[where==="start"?"prepend":"append"](icon(name));return button;}
+function withIcon(button,name){button.append(icon(name));return button;}
 function iconBox(className,name){const box=el("div",className);box.append(icon(name));return box;}
 function iconButton(name,className,label,handler){const b=makeButton("",className,handler);b.setAttribute("aria-label",label);b.append(icon(name));return b;}
 function emptyState(symbol,title,copy,actionLabel,action){
@@ -88,7 +87,7 @@ function formatDate(value){
   return date.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
 }
 function getExam(id){ return state.exams.find(exam=>exam.id===id); }
-function getAttempts(id){ return state.attempts.filter(a=>!id||a.examId===id); }
+function getAttempts(id){ return state.attempts.filter(a=>a.examId===id); }
 function plural(n,one,many){ return `${n} ${n===1?one:many}`; }
 function average(values){ return values.length ? Math.round(values.reduce((a,b)=>a+b,0)/values.length) : 0; }
 function pageLabel(page){ return ({overview:"Overview",create:"Create examination",explore:"Explore examinations","my-exams":"My examinations",analytics:"Results and analytics",saved:"Saved examinations",taking:"Practice session",result:"Result"})[page]||"Overview"; }
@@ -126,7 +125,7 @@ function renderOverview(){
     row.append(copy,el("div","activity-score",`${a.percent}%`)); recent.append(row);
   });
   const cont=document.getElementById("continue-list"); cont.replaceChildren();
-  const candidates=[...state.exams].filter(e=>e.status==="published").sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,3);
+  const candidates=state.exams.filter(e=>e.status==="published").sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,3);
   if(!candidates.length) cont.append(el("p","empty-copy","Publish an examination to display it here."));
   else candidates.forEach(exam=>{
     const row=el("div","continue-item"),copy=el("div","continue-copy");
@@ -262,7 +261,6 @@ function renderBuilderQuestions(){
     select.value=q.type;
     select.addEventListener("change",()=>{
       const next=select.value;
-      // Keep the prompt and explanation; never carry a correct answer into a different question type.
       if(q.type==="mcq") q._opts=q.options.slice();
       q.type=next; q.correct="";
       q.options=next==="truefalse"?TF_OPTIONS.slice():next==="short"?[]:(q._opts||["","","",""]);
@@ -356,7 +354,6 @@ function saveBuilder(status){
 }
 function editExam(id){const exam=getExam(id);if(exam)openBuilder(exam);}
 function publishDraft(id){const exam=getExam(id);if(exam){exam.status="published";exam.updatedAt=new Date().toISOString();persist();renderMyExams();toast("Draft published.");}}
-function saveDraft(){saveBuilder("draft");}
 
 function startExam(id){
   const exam=getExam(id);if(!exam||exam.status!=="published")return;
@@ -375,7 +372,7 @@ function renderTaking(){
     if(q.type==="mcq"||q.type==="truefalse"){
       const opts=el("div","answer-options");
       q.options.forEach((option,oi)=>{
-        const letter=q.type==="truefalse"?(oi===0?"A":"B"):LETTERS[oi];
+        const letter=LETTERS[oi];
         const button=makeButton("",`answer-option${activeAnswers[i]===letter?" selected":""}`,()=>{
           activeAnswers[i]=letter;
           card.querySelectorAll(".answer-option").forEach(optionButton=>optionButton.classList.remove("selected"));
@@ -390,20 +387,19 @@ function renderTaking(){
     container.append(card);
   });
   const jump=document.getElementById("question-jump-list");jump.replaceChildren();const grid=el("div","jump-grid");
-  exam.questions.forEach((q,i)=>grid.append(makeButton(String(i+1),Object.prototype.hasOwnProperty.call(activeAnswers,i)&&String(activeAnswers[i]).trim()?"done":"",()=>document.getElementById(`take-q-${i}`).scrollIntoView({behavior:"smooth",block:"start"}))));
+  exam.questions.forEach((_,i)=>grid.append(makeButton(String(i+1),"",()=>document.getElementById(`take-q-${i}`).scrollIntoView({behavior:"smooth",block:"start"}))));
   jump.append(grid);updateTakingProgress(exam);
 }
 function typeLabel(type){return type==="mcq"?"MULTIPLE CHOICE":type==="truefalse"?"TRUE OR FALSE":"IDENTIFICATION";}
-function isAnswered(q,answer){
-  if(answer===undefined||answer===null||String(answer).trim()==="")return false;
-  return true;
+function isAnswered(answer){
+  return answer!==undefined&&answer!==null&&String(answer).trim()!=="";
 }
 function updateTakingProgress(exam){
-  const answered=exam.questions.filter((q,i)=>isAnswered(q,activeAnswers[i])).length;
+  const answered=exam.questions.filter((_,i)=>isAnswered(activeAnswers[i])).length;
   document.getElementById("taking-progress").textContent=`${answered} of ${exam.questions.length} answered`;
   document.getElementById("taking-progress-bar").style.width=`${answered/exam.questions.length*100}%`;
   const buttons=document.querySelectorAll("#question-jump-list button");
-  buttons.forEach((b,i)=>b.classList.toggle("done",isAnswered(exam.questions[i],activeAnswers[i])));
+  buttons.forEach((b,i)=>b.classList.toggle("done",isAnswered(activeAnswers[i])));
 }
 function normalized(value){return String(value??"").trim().toLowerCase().replace(/\s+/g," ");}
 function answerIsCorrect(q,answer){
@@ -412,7 +408,7 @@ function answerIsCorrect(q,answer){
 }
 function submitAttempt(){
   const exam=getExam(activeExamId);if(!exam)return;
-  const missing=exam.questions.reduce((arr,q,i)=>{if(!isAnswered(q,activeAnswers[i]))arr.push(i+1);return arr;},[]);
+  const missing=exam.questions.reduce((arr,_,i)=>{if(!isAnswered(activeAnswers[i]))arr.push(i+1);return arr;},[]);
   if(missing.length){toast(`Respond to all questions before submitting. Unanswered: ${missing.slice(0,5).join(", ")}${missing.length>5?"…":""}`,true);return;}
   const results=exam.questions.map((q,i)=>({question:clone(q),answer:activeAnswers[i],correct:answerIsCorrect(q,activeAnswers[i])}));
   const correct=results.filter(r=>r.correct).length;
@@ -456,7 +452,7 @@ function wireEvents(){
   document.getElementById("back-to-overview").addEventListener("click",()=>showPage("overview"));
   document.getElementById("add-question").addEventListener("click",()=>{builderQuestions.push(blankQuestion());renderBuilderQuestions();});
   document.getElementById("exam-form").addEventListener("submit",e=>{e.preventDefault();saveBuilder("published");});
-  document.getElementById("save-draft").addEventListener("click",saveDraft);
+  document.getElementById("save-draft").addEventListener("click",()=>saveBuilder("draft"));
   document.getElementById("explore-search").addEventListener("input",renderExplore);
   document.getElementById("explore-subject").addEventListener("change",renderExplore);
   document.getElementById("explore-difficulty").addEventListener("change",renderExplore);
@@ -474,6 +470,5 @@ function wireEvents(){
 
 function init(){
   wireEvents();persist();renderOverview();renderExplore();renderMyExams();
-  // Start with a useful sample reviewer, while all new content stays local to this browser.
 }
 document.addEventListener("DOMContentLoaded",init);
